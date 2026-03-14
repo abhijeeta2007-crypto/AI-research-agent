@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Research Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+    <div class="max-w-5xl mx-auto px-6 py-12">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-black text-gray-900 mb-4">Research Agent</h1>
+            <p class="text-gray-500 text-lg">Autonomous literature review and report generation.</p>
+        </header>
+
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+            <div class="flex flex-col md:flex-row gap-4">
+                <input type="text" id="topicInput" placeholder="Enter research topic..." 
+                       class="flex-1 px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 outline-none transition-all">
+                <button onclick="startResearch()" id="btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-xl shadow-lg transition-all active:scale-95">
+                    Launch Agents
+                </button>
+            </div>
+        </div>
+
+        <div id="statusBox" class="hidden bg-white rounded-2xl shadow-sm p-6 mb-8 border border-blue-100 items-center gap-4">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-100 h-10 w-10"></div>
+            <p class="text-blue-700 font-medium" id="statusMsg">Gathering papers from arXiv...</p>
+        </div>
+
+        <div id="results" class="hidden animate-in fade-in duration-700">
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                <div class="p-8 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-2xl font-bold">Research Findings</h2>
+                    <a id="downloadBtn" href="#" download class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold shadow-md transition-all">
+                        Download Presentation
+                    </a>
+                </div>
+                <div id="reportArea" class="p-8 whitespace-pre-wrap text-gray-700 leading-relaxed text-lg italic"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://127.0.0.1:8000";
+        async function startResearch() {
+            const topic = document.getElementById('topicInput').value;
+            if(!topic) return;
+            
+            document.getElementById('btn').disabled = true;
+            document.getElementById('statusBox').classList.replace('hidden', 'flex');
+            document.getElementById('results').classList.add('hidden');
+
+            const res = await fetch(`${API}/research?topic=${encodeURIComponent(topic)}`, {method:'POST'});
+            const { job_id } = await res.json();
+            
+            const timer = setInterval(async () => {
+                const sRes = await fetch(`${API}/status/${job_id}`);
+                const data = await sRes.json();
+                if(data.status === 'completed') {
+                    clearInterval(timer);
+                    document.getElementById('statusBox').classList.replace('flex', 'hidden');
+                    document.getElementById('results').classList.remove('hidden');
+                    document.getElementById('reportArea').innerText = data.report;
+                    document.getElementById('downloadBtn').href = `${API}${data.ppt_url}`;
+                    document.getElementById('btn').disabled = false;
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
