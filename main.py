@@ -26,7 +26,7 @@ app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 # 5. INITIALIZE AGENTS
 # Remember to replace this with your actual key!
-agents = ResearchAgents(api_key="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")
+agents = ResearchAgents(api_key=os.getenv("GROQ_API_KEY"))
 
 db = {} # Simple in-memory storage
 
